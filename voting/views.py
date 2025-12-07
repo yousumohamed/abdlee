@@ -133,6 +133,8 @@ def resend_otp(request):
     I used https://www.multitexter.com/ API to send SMS
     You might not want to use this or this service might not be available in your Country
     For quick and easy access, Toggle the SEND_OTP from True to False in settings.py
+    
+    MODIFIED: For testing, OTP is now shown in the response message on the webpage!
     """
     user = request.user
     voter = user.voter
@@ -160,11 +162,13 @@ def resend_otp(request):
                     voter.otp_sent = voter.otp_sent + 1
                     voter.save()
 
-                    response = "OTP has been sent to your phone number. Please provide it in the box provided below"
+                    # FOR TESTING: Include OTP in the response so it shows on webpage
+                    response = f"Your OTP code is: {otp} - Please enter it in the box below to verify your account."
                 else:
                     error = True
                     response = "OTP not sent. Please try again"
             except Exception as e:
+                error = True
                 response = "OTP could not be sent." + str(e)
 
                 # * Send OTP
@@ -183,28 +187,62 @@ def bypass_otp():
 
 
 def send_sms(phone_number, msg):
-    """Read More
-    https://www.multitexter.com/developers
     """
-    import requests
+    Send SMS using Twilio (Best option - works worldwide with free credits!)
+    
+    Setup:
+    1. Sign up at https://www.twilio.com/try-twilio (FREE $15 credit)
+    2. Get: Account SID, Auth Token, and Phone Number
+    3. Set environment variables:
+       $env:TWILIO_ACCOUNT_SID = "your_account_sid"
+       $env:TWILIO_AUTH_TOKEN = "your_auth_token"  
+       $env:TWILIO_PHONE_NUMBER = "+1234567890"
+    4. Restart server and test!
+    """
     import os
-    import json
-    response = ""
-    email = os.environ.get('SMS_EMAIL')
-    password = os.environ.get('SMS_PASSWORD')
-    if email is None or password is None:
-        raise Exception("Email/Password cannot be Null")
-    url = "https://app.multitexter.com/v2/app/sms"
-    data = {"email": email, "password": password, "message": msg,
-            "sender_name": "OTP", "recipients": phone_number, "forcednd": 1}
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    r = requests.post(url, data=json.dumps(data), headers=headers)
-    response = r.json()
-    status = response.get('status', 0)
-    if str(status) == '1':
+    
+    # Always print OTP to console for backup/debugging
+    print("\n" + "="*60)
+    print("OTP MESSAGE FOR PHONE:", phone_number)
+    print("="*60)
+    print(msg)
+    print("="*60 + "\n")
+    
+    # Get Twilio credentials from environment variables
+    account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+    auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+    twilio_number = os.environ.get('TWILIO_PHONE_NUMBER')
+    
+    # If Twilio credentials are not set, return True (OTP still shows on website)
+    if not all([account_sid, auth_token, twilio_number]):
+        print("INFO: Twilio not configured. OTP will show on website and in console.")
+        print("To enable SMS: Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER")
         return True
-    else:
-        return False
+    
+    # Try to send SMS via Twilio
+    try:
+        from twilio.rest import Client
+        
+        client = Client(account_sid, auth_token)
+        message = client.messages.create(
+            body=msg,
+            from_=twilio_number,
+            to=phone_number
+        )
+        
+        print(f"SUCCESS! SMS sent via Twilio. Message SID: {message.sid}")
+        return True
+        
+    except ImportError:
+        print("ERROR: Twilio package not installed. Run: pip install twilio")
+        print("OTP will still show on website.")
+        return True
+        
+    except Exception as e:
+        print(f"WARNING: Twilio SMS failed: {e}")
+        print("OTP will still show on website.")
+        return True
+
 
 
 def verify_otp(request):

@@ -1,0 +1,69 @@
+{% extends 'root.html' %}
+{% block content %}
+<section class="content">
+  <h1 class="page-header text-center title"><b>{{ TITLE }}</b></h1>
+<div class="row">
+<div class="col-sm-10 col-sm-offset-1">
+
+<div class="row">
+<div class="col-xs-12">
+  <div class="box box-solid" id="">
+      <div class="box-header with-border" style="background-color: #f39c12; color: white;">
+          <h3 class="box-title"><b><i class="fa fa-clock-o"></i> Account Pending Verification</b>
+              <hr>
+          </h3>
+      </div>
+      <div class="box-body">
+          <div class="alert alert-warning" style="font-size: 16px;">
+              <h4><i class="fa fa-info-circle"></i> Your Registration is Complete!</h4>
+              <p>Thank you for registering. Your account has been created successfully.</p>
+          </div>
+          
+          <div class="alert alert-info" style="font-size: 16px;">
+              <h4><i class="fa fa-hourglass-half"></i> Waiting for Admin Verification</h4>
+              <p><strong>Your account is currently pending verification by the administrator.</strong></p>
+              <p>Please wait while the admin reviews and approves your registration.</p>
+          </div>
+
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h4><i class="fa fa-question-circle"></i> What happens next?</h4>
+              </div>
+              <div class="panel-body">
+                  <ol style="font-size: 15px; line-height: 2;">
+                      <li><strong>Admin will review your registration</strong> - The administrator will check your details</li>
+                      <li><strong>Account will be verified</strong> - Once approved, your account will be activated</li>
+                      <li><strong>You can login and vote</strong> - After verification, you can login and cast your vote</li>
+                  </ol>
+              </div>
+          </div>
+
+          <div class="alert alert-success" style="font-size: 15px;">
+              <h4><i class="fa fa-lightbulb-o"></i> What should you do?</h4>
+              <ul style="line-height: 1.8;">
+                  <li><strong>Check back later</strong> - Try logging in after some time</li>
+                  <li><strong>Contact admin if urgent</strong> - Reach out to the administrator if needed</li>
+                  <li><strong>Keep your login details safe</strong> - Remember your email and password</li>
+              </ul>
+          </div>
+
+          <hr>
+          
+          <div class="text-center" style="margin-top: 20px;">
+              <a href="{% url 'account_login' %}" class="btn btn-primary btn-lg">
+                  <i class="fa fa-sign-in"></i> Go to Login Page
+              </a>
+          </div>
+
+          <div class="text-center" style="margin-top: 15px; color: #999;">
+              <p><small>You will be able to login once the administrator verifies your account.</small></p>
+          </div>
+      </div>
+  </div>
+</div>
+</div>
+
+</div>
+</div>
+</section>
+{% endblock content %}

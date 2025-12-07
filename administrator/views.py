@@ -7,7 +7,16 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.conf import settings
 import json  # Not used
-from django_renderpdf.views import PDFView
+
+# Try to import PDFView, but make it optional for Windows users
+try:
+    from django_renderpdf.views import PDFView
+    PDF_AVAILABLE = True
+except (ImportError, OSError) as e:
+    # WeasyPrint requires GTK libraries which are not available on Windows by default
+    PDF_AVAILABLE = False
+    print("Warning: PDF generation is disabled. WeasyPrint dependencies not found.")
+    print("To enable PDF generation, install GTK libraries: https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows")
 
 
 def find_n_winners(data, n):
@@ -30,63 +39,76 @@ def find_n_winners(data, n):
     return ", &nbsp;".join(final_list)
 
 
-class PrintView(PDFView):
-    template_name = 'admin/print.html'
-    prompt_download = True
 
-    @property
-    def download_name(self):
-        return "result.pdf"
+if PDF_AVAILABLE:
+    class PrintView(PDFView):
+        template_name = 'admin/print.html'
+        prompt_download = True
 
-    def get_context_data(self, *args, **kwargs):
-        title = "E-voting"
-        try:
-            file = open(settings.ELECTION_TITLE_PATH, 'r')
-            title = file.read()
-        except:
-            pass
-        context = super().get_context_data(*args, **kwargs)
-        position_data = {}
-        for position in Position.objects.all():
-            candidate_data = []
-            winner = ""
-            for candidate in Candidate.objects.filter(position=position):
-                this_candidate_data = {}
-                votes = Votes.objects.filter(candidate=candidate).count()
-                this_candidate_data['name'] = candidate.fullname
-                this_candidate_data['votes'] = votes
-                candidate_data.append(this_candidate_data)
-            print("Candidate Data For  ", str(
-                position.name), " = ", str(candidate_data))
-            # ! Check Winner
-            if len(candidate_data) < 1:
-                winner = "Position does not have candidates"
-            else:
-                # Check if max_vote is more than 1
-                if position.max_vote > 1:
-                    winner = find_n_winners(candidate_data, position.max_vote)
+        @property
+        def download_name(self):
+            return "result.pdf"
+
+        def get_context_data(self, *args, **kwargs):
+            title = "E-voting"
+            try:
+                file = open(settings.ELECTION_TITLE_PATH, 'r')
+                title = file.read()
+            except:
+                pass
+            context = super().get_context_data(*args, **kwargs)
+            position_data = {}
+            for position in Position.objects.all():
+                candidate_data = []
+                winner = ""
+                for candidate in Candidate.objects.filter(position=position):
+                    this_candidate_data = {}
+                    votes = Votes.objects.filter(candidate=candidate).count()
+                    this_candidate_data['name'] = candidate.fullname
+                    this_candidate_data['votes'] = votes
+                    candidate_data.append(this_candidate_data)
+                print("Candidate Data For  ", str(
+                    position.name), " = ", str(candidate_data))
+                # ! Check Winner
+                if len(candidate_data) < 1:
+                    winner = "Position does not have candidates"
                 else:
-
-                    winner = max(candidate_data, key=lambda x: x['votes'])
-                    if winner['votes'] == 0:
-                        winner = "No one voted for this yet position, yet."
+                    # Check if max_vote is more than 1
+                    if position.max_vote > 1:
+                        winner = find_n_winners(candidate_data, position.max_vote)
                     else:
-                        """
-                        https://stackoverflow.com/questions/18940540/how-can-i-count-the-occurrences-of-an-item-in-a-list-of-dictionaries
-                        """
-                        count = sum(1 for d in candidate_data if d.get(
-                            'votes') == winner['votes'])
-                        if count > 1:
-                            winner = f"There are {count} candidates with {winner['votes']} votes"
+
+                        winner = max(candidate_data, key=lambda x: x['votes'])
+                        if winner['votes'] == 0:
+                            winner = "No one voted for this yet position, yet."
                         else:
-                            winner = "Winner : " + winner['name']
-            print("Candidate Data For  ", str(
-                position.name), " = ", str(candidate_data))
-            position_data[position.name] = {
-                'candidate_data': candidate_data, 'winner': winner, 'max_vote': position.max_vote}
-        context['positions'] = position_data
-        print(context)
-        return context
+                            """
+                            https://stackoverflow.com/questions/18940540/how-can-i-count-the-occurrences-of-an-item-in-a-list-of-dictionaries
+                            """
+                            count = sum(1 for d in candidate_data if d.get(
+                                'votes') == winner['votes'])
+                            if count > 1:
+                                winner = f"There are {count} candidates with {winner['votes']} votes"
+                            else:
+                                winner = "Winner : " + winner['name']
+                print("Candidate Data For  ", str(
+                    position.name), " = ", str(candidate_data))
+                position_data[position.name] = {
+                    'candidate_data': candidate_data, 'winner': winner, 'max_vote': position.max_vote}
+            context['positions'] = position_data
+            print(context)
+            return context
+else:
+    # Fallback when PDF is not available
+    from django.views import View
+    class PrintView(View):
+        def get(self, request, *args, **kwargs):
+            return HttpResponse(
+                "PDF generation is not available. Please install GTK libraries for Windows. "
+                "See: https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows",
+                status=503
+            )
+
 
 
 def dashboard(request):

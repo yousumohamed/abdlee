@@ -44,13 +44,26 @@ def account_register(request):
             voter = voterForm.save(commit=False)
             voter.admin = user
             user.save()
+            
+            # Set OTP but DON'T verify - admin will verify manually
+            voter.otp = "0000"  # Set default OTP
+            voter.verified = False  # NOT verified - admin must verify
             voter.save()
-            messages.success(request, "Account created. You can login now!")
-            return redirect(reverse('account_login'))
+            
+            # Redirect to pending verification page
+            return redirect(reverse('pending_verification'))
         else:
             messages.error(request, "Provided data failed validation")
             # return account_login(request)
     return render(request, "voting/reg.html", context)
+
+
+def pending_verification(request):
+    """Show pending verification page for newly registered users"""
+    context = {
+        'page_title': 'Pending Verification'
+    }
+    return render(request, "voting/voter/pending_verification.html", context)
 
 
 def account_logout(request):
