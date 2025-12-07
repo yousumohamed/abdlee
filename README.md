@@ -214,7 +214,9 @@ Password: student
 
 
 ## For Sponsor or Projects Enquiry
-
+1. Email - yousufmoha255@gmail.com
+2. LinkedIn - [Yousuf Mohamed](https://www.linkedin.com/in/yousufmoha255)
+2. website - [uls-demo.vercel.app](https://uls-demo.vercel.app/)
 
 
 
